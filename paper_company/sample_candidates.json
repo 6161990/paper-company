@@ -1,0 +1,21 @@
+[
+  {
+    "title": "Build a personal research agent with Claude Agent SDK",
+    "source": "Claude Docs",
+    "url": "https://docs.claude.com/en/docs/agent-sdk/overview",
+    "category": "ai"
+  },
+  {
+    "title": "GitHub Trending backend queue project",
+    "source": "GitHub Trending",
+    "url": "https://github.com/trending",
+    "category": "backend"
+  },
+  {
+    "title": "Creator automation workflow for daily idea capture",
+    "source": "Indie hacker post",
+    "url": "https://example.com/creator-automation",
+    "category": "money"
+  }
+]
+
