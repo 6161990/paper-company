@@ -31,9 +31,9 @@ docker compose down
 
 ## MVP Direction
 
-- One Local Agent: Paper Company Exploration Agent
-- 탐색 범위: AI 공부, Claude Agent SDK, 백엔드 기술, 돈 버는 자동화, 영감 주는 사람
-- 역할: 탐색, 방향 전환, 큐레이션, TOP 5 추천
+- Local Runtime: 하나의 Claude Agent SDK 실행
+- Internal Agents: AI, Backend, Money, Inspiring People
+- 역할: 관심사별 탐색, 방향 전환, 큐레이션, TOP 5 추천
 
 ## Product Notes
 
@@ -41,6 +41,7 @@ docker compose down
 - [Roadmap](docs/roadmap.md)
 - [Runtime Plan](docs/runtime-plan.md)
 - [Feedback Loop](docs/feedback-loop.md)
+- [Telegram Interface](docs/telegram-interface.md)
 - [Output Experience](docs/output-experience.md)
 - [Agent Map](docs/agent-map.md)
 - [Daily Brief Format](docs/daily-brief-format.md)

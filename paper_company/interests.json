@@ -10,8 +10,36 @@
     "AI learning",
     "Claude Agent SDK",
     "backend engineering",
+    "Korean and global engineering blogs",
     "money-making automation",
     "inspiring people"
+  ],
+  "priority_sources": [
+    {
+      "name": "LY Corporation Tech Blog",
+      "url": "https://techblog.lycorp.co.jp/en/blog",
+      "reason": "LINE Engineering moved to LY Corporation Tech Blog; useful for backend, infra, platform, and engineering culture."
+    },
+    {
+      "name": "LINE Engineering Blog archive",
+      "url": "https://engineering.linecorp.com/en/blog",
+      "reason": "Older LINE engineering posts and migration notice."
+    },
+    {
+      "name": "우아한형제들 기술블로그",
+      "url": "https://techblog.woowahan.com/",
+      "reason": "Backend, infra, 장애 대응, GenAI, 운영 사례가 많고 한국 백엔드 개발자에게 적합."
+    },
+    {
+      "name": "Google Developers Blog",
+      "url": "https://developers.googleblog.com/en/",
+      "reason": "Google developer product, AI, cloud, platform updates."
+    },
+    {
+      "name": "NAVER D2",
+      "url": "https://d2.naver.com/helloworld",
+      "reason": "NAVER engineering articles, backend, web, data, infra topics."
+    }
   ],
   "output_goal": "Paperclip을 열고 반응하고 싶을 만큼 흥미로운 발견을 한국어로 가져온다."
 }

@@ -1,30 +1,94 @@
 # Agent Map
 
-로컬 MVP에서는 에이전트를 하나만 둔다.
+Paper Company는 여러 관심사 에이전트가 한 회사의 팀처럼 움직이는 구조로 간다.
 
-여러 에이전트로 나누면 관제실은 멋있어 보이지만, 지금 단계에서는 프롬프트 관리, 로그 관리, 피드백 반영이 불필요하게 복잡해진다.
+중요한 점:
 
-## Local MVP Agent
+로컬 MVP에서 실제 프로세스는 하나만 실행한다.
 
-### Paper Company Exploration Agent
+```text
+one Claude Agent SDK run
+  -> internally acts as multiple interest agents
+  -> merges findings
+  -> curates Morning Signal TOP 5
+```
+
+즉, 지금 당장 여러 서버나 여러 프로세스를 띄우는 것이 아니다. 하나의 Claude Agent SDK 실행 안에서 여러 관점으로 탐색하게 만든다.
+
+## Interest Agents
+
+### AI Agent
+
+찾는 것:
+
+- Claude Agent SDK 사례
+- AI agent workflow
+- AI startup
+- 개발자가 바로 따라 해볼 수 있는 AI 자동화
+
+추천 기준:
+
+- Paper Company에 바로 붙일 수 있는가
+- “이거 만들어보고 싶다”는 느낌이 오는가
+- n8n, Paperclip, backend 시스템과 연결되는가
+
+### Backend Agent
+
+찾는 것:
+
+- 장애 분석 글
+- 데이터 파이프라인
+- retry, queue, observability, infra
+- GitHub Trending backend repo
+- LINE/LY Corporation Tech Blog
+- 우아한형제들 기술블로그
+- Google Developers Blog
+- NAVER D2
+
+추천 기준:
+
+- 실무 감각을 키우는가
+- 나중에 블로그 글감이 되는가
+- 자동화/관제실 아이디어로 연결되는가
+- 한국 백엔드 개발자 관점에서 적용 가능한가
+
+### Money Agent
+
+찾는 것:
+
+- 작은 자동화로 돈을 버는 사례
+- SaaS micro tool
+- creator automation
+- lead generation, content ops
+
+추천 기준:
+
+- 과장된 부업 글이 아닌가
+- 내 기술 스택으로 작게 실험 가능한가
+- 콘텐츠 공장 Phase 2, 3과 이어지는가
+
+### Inspiring People Agent
+
+찾는 것:
+
+- 영감 주는 창업자/개발자/크리에이터
+- 일하는 방식
+- 루틴, 철학, 프로젝트 운영법
+
+추천 기준:
+
+- 따라 해보고 싶은 행동이 있는가
+- 지금의 Paper Company 운영 방식에 힌트를 주는가
+- 단순 명언이 아니라 실제 작업 방식으로 연결되는가
+
+## Curation Agent
 
 역할:
 
-- 오늘의 관심사와 최근 피드백을 읽는다.
-- 웹과 공개 소스를 탐색한다.
-- 좋은 방향이 보이면 더 깊게 파고든다.
-- 별로면 다른 방향으로 전환한다.
-- 발견한 아이템을 네 취향 기준으로 큐레이션한다.
-- Paperclip에서 피드백받기 좋은 형태로 TOP 5를 만든다.
-
-탐색 범위:
-
-- AI learning
-- Claude Agent SDK
-- backend engineering
-- money-making automation
-- inspiring people
-- fiction ideas
+- 각 관심사 에이전트 관점의 발견을 합친다.
+- 중복과 저품질 발견을 제거한다.
+- `ubuntu src가 오늘 꽂힐 확률` 기준으로 TOP 5를 고른다.
+- 한 분야로 너무 쏠리면 균형을 조정한다.
 
 판단 기준:
 
@@ -34,22 +98,17 @@
 - Novelty: 새롭거나 시야를 넓히는가
 - Reality: 오늘 30분 안에 첫 행동이 가능한가
 
-## Later Expansion
+## Later Runtime Split
 
-나중에 필요해지면 에이전트를 나눌 수 있다.
+나중에 필요해지면 실제 실행 단위도 나눌 수 있다.
 
 예:
 
-- AI/Agent Research
-- Backend Systems
-- Money Automation
-- Fiction/Story
-
-하지만 이건 Paperclip 피드백 데이터가 쌓인 뒤에 판단한다.
-
-초기 원칙:
-
 ```text
-one agent first
-split only when the feedback says we need it
+AI Agent process
+Backend Agent process
+Money Agent process
+Inspiring People Agent process
 ```
+
+하지만 초기에는 하나의 Claude Agent SDK 실행 안에서 역할만 나눠도 충분하다.

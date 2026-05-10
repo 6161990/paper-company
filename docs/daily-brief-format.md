@@ -44,7 +44,7 @@ https://example.com
 
 평가 기준:
 - Momentum: 지금 당장 해보고 싶은 느낌
-- Fit: AI, backend, automation, novel, inspiring people과의 연결성
+- Fit: AI, backend, automation, inspiring people과의 연결성
 - Leverage: 콘텐츠/프로젝트/학습으로 확장 가능성
 - Reality: 오늘 30분 안에 첫 행동이 가능한지
 

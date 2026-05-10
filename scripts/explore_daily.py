@@ -88,7 +88,10 @@ async def main() -> None:
 탐색 규칙:
 - 반드시 한국어로 작성한다.
 - 일반 뉴스 요약처럼 쓰지 않는다.
-- AI, backend, automation, fiction, inspiring people과 연결되는 좋은 방향을 발견하면 더 깊게 파고든다.
+- AI, backend, automation, inspiring people과 연결되는 좋은 방향을 발견하면 더 깊게 파고든다.
+- 하나의 실행 안에서 AI Agent, Backend Agent, Money Agent, Inspiring People Agent의 관점으로 탐색한다.
+- Backend Agent는 LINE/LY Corporation Tech Blog, 우아한형제들 기술블로그, Google Developers Blog, NAVER D2를 우선 확인한다.
+- 단, 최종 결과는 여러 Agent 로그가 아니라 하나의 Morning Signal TOP 5로 합쳐서 작성한다.
 - Paperclip에서 보여줄 수 있도록 이 아이템이 왜 등장했는지 exploration_path를 설명한다.
 - 각 아이템은 클릭하고 싶을 만큼 흥미롭게 쓴다.
 - 각 아이템마다 30분 안에 할 수 있는 next_action을 포함한다.

@@ -7,10 +7,13 @@ Paper Company는 세 가지 실행 단위로 생각하면 쉽다.
    항상 켜져 있는 화면
 
 2. n8n
-   정해진 시간에 일을 시키는 자동화 엔진
+   정해진 시간 또는 Telegram 요청에 일을 시키는 자동화 엔진
 
 3. Claude Agent SDK script
    필요할 때 실행되고 끝나는 탐색 작업자
+
+4. Telegram Bot
+   모바일에서 실시간 요청을 보내는 명령창
 ```
 
 ## VPS란?
@@ -28,12 +31,14 @@ VPS는 `Virtual Private Server`의 줄임말이다.
 - Paperclip UI
 - n8n
 - database storage
+- Telegram bot webhook
 
 항상 켜져 있을 필요가 없는 것:
 
 - Claude Agent SDK exploration script
 - supporting source scripts
 - Telegram sending script
+- incident search script
 
 Claude Agent SDK는 서버처럼 계속 띄워놓는 대상이 아니다. 보통은 n8n이 필요할 때 Python 스크립트를 실행하고, Claude Agent SDK가 탐색과 큐레이션을 끝낸 뒤 종료된다.
 
@@ -85,6 +90,7 @@ VPS
 역할:
 
 - n8n은 오전 7시에 workflow 실행
+- n8n은 Telegram 요청이 들어오면 실시간 workflow 실행
 - Python script는 Claude Agent SDK 탐색 수행
 - SQLite는 결과와 피드백 저장
 - Paperclip UI는 결과 확인과 피드백 입력 담당
@@ -127,7 +133,7 @@ Paperclip이 맡는 일:
 - 오늘의 추천 보기
 - 추천 이유 보기
 - 좋아요/별로예요/저장/실행함 피드백
-- Exploration Agent 상태 보기
+- 관심사별 내부 Agent 상태 보기
 - 실패 로그 보기
 - 피드백 기반 재추천 요청
 
