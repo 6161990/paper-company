@@ -4,13 +4,19 @@
 
 목적은 콘텐츠 자동 생산보다 먼저, AI가 매일 나 대신 세상을 둘러보고 나에게 꽂힐 가능성이 높은 아이템을 가져오게 하는 것입니다.
 
-오늘 목표는 작게 갑니다.
+## Current Local Run Order
 
-1. n8n을 로컬에서 실행한다.
-2. 브라우저에서 n8n 화면을 본다.
-3. 이후 `매일 오전 7시 영감 탐색` 워크플로우를 하나씩 붙인다.
+현재 로컬에서는 n8n이 Python을 직접 실행하지 않는다.
 
-## Run
+```text
+n8n
+  -> HTTP Request
+  -> local runner
+  -> Claude Agent SDK
+  -> Markdown + SQLite 저장
+```
+
+### 1. Start n8n
 
 ```bash
 cp .env.example .env
@@ -23,11 +29,85 @@ n8n:
 http://localhost:5678
 ```
 
-## Stop
+### 2. Start Local Runner
+
+다른 터미널에서 실행한다.
+
+```bash
+.venv/bin/python scripts/local_runner.py
+```
+
+이 터미널은 n8n workflow를 실행하는 동안 계속 켜둔다.
+
+확인:
+
+```bash
+curl http://127.0.0.1:8711/health
+```
+
+정상 응답:
+
+```json
+{"ok": true, "service": "paper-company-runner"}
+```
+
+### 3. Run From n8n
+
+n8n에서 workflow를 만든다.
+
+```text
+Manual Trigger
+  -> HTTP Request
+```
+
+HTTP Request 설정:
+
+```text
+Method: POST
+URL: http://host.docker.internal:8711/run/explore
+Response Format: JSON
+```
+
+성공하면 결과가 저장된다.
+
+```text
+data/briefs/YYYY-MM-DD.md
+data/paper_company.db
+```
+
+## Direct Script Run
+
+n8n 없이 바로 실행할 수도 있다.
+
+```bash
+.venv/bin/python scripts/explore_daily.py
+```
+
+## SQLite
+
+DB 열기:
+
+```bash
+sqlite3 data/paper_company.db
+```
+
+최근 브리프 확인:
+
+```sql
+SELECT id, run_date, title FROM briefs ORDER BY run_date DESC;
+```
+
+자세한 내용:
+
+[SQLite Access](docs/sqlite-access.md)
+
+## Stop Services
 
 ```bash
 docker compose down
 ```
+
+local runner는 실행 중인 터미널에서 `Ctrl+C`로 종료한다.
 
 ## MVP Direction
 
@@ -37,6 +117,9 @@ docker compose down
 
 ## Product Notes
 
+- [Project Status](docs/project-status.md)
+- [n8n Local Workflow](docs/n8n-local-workflow.md)
+- [SQLite Access](docs/sqlite-access.md)
 - [Vision](docs/vision.md)
 - [Roadmap](docs/roadmap.md)
 - [Runtime Plan](docs/runtime-plan.md)
