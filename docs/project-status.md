@@ -69,6 +69,7 @@ Legend:
 | Exploration script | [~] | `explore_daily.py` exists; needs repeated real-run validation |
 | Korean output | [x] | Prompt requires Korean Morning Signal |
 | Backend source priority | [x] | LY/LINE, Woowahan, Google Developers, NAVER D2 added |
+| Interest balance guard | [x] | Prompt limits AI/backend overrepresentation and requires Money/People items |
 | Markdown brief save | [x] | Saves to `data/briefs/YYYY-MM-DD.md` |
 | n8n local | [x] | Docker Compose exists and n8n can run locally |
 | SQLite | [~] | Schema exists; `explore_daily.py` now saves briefs to SQLite |

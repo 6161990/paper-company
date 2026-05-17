@@ -112,7 +112,7 @@ local runner는 실행 중인 터미널에서 `Ctrl+C`로 종료한다.
 ## MVP Direction
 
 - Local Runtime: 하나의 Claude Agent SDK 실행
-- Internal Agents: AI, Backend, Money, Inspiring People
+- Internal Agents: AI, Backend, Stock/Business, Inspiring People
 - 역할: 관심사별 탐색, 방향 전환, 큐레이션, TOP 5 추천
 
 ## Product Notes

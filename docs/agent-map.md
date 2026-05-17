@@ -56,16 +56,17 @@ one Claude Agent SDK run
 
 찾는 것:
 
-- 작은 자동화로 돈을 버는 사례
-- SaaS micro tool
-- creator automation
-- lead generation, content ops
+- 오늘의 주식/시장 소식
+- 기업과 산업 흐름
+- ERP, 회계, 재무제표, 비즈니스 운영 개념
+- 하루에 하나씩 이해할 수 있는 돈/회사 개념
 
 추천 기준:
 
-- 과장된 부업 글이 아닌가
-- 내 기술 스택으로 작게 실험 가능한가
-- 콘텐츠 공장 Phase 2, 3과 이어지는가
+- 실제 시장 소식과 연결되는가
+- 하루에 하나씩 개념을 쌓을 수 있는가
+- 백엔드 개발자가 회사/비즈니스를 이해하는 데 도움이 되는가
+- Paper Company 운영 감각에 도움이 되는가
 
 ### Inspiring People Agent
 

@@ -129,14 +129,22 @@ async def main() -> None:
 
 탐색 규칙:
 - 반드시 한국어로 작성한다.
-- 일반 뉴스 요약처럼 쓰지 않는다.
-- AI, backend, automation, inspiring people과 연결되는 좋은 방향을 발견하면 더 깊게 파고든다.
+- 일반 뉴스 요약이나 기술 브리핑처럼 쓰지 않는다.
+- AI, backend, stocks, ERP/business concepts, inspiring people과 연결되는 좋은 방향을 발견하면 더 깊게 파고든다.
 - 하나의 실행 안에서 AI Agent, Backend Agent, Money Agent, Inspiring People Agent의 관점으로 탐색한다.
 - Backend Agent는 LINE/LY Corporation Tech Blog, 우아한형제들 기술블로그, Google Developers Blog, NAVER D2를 우선 확인한다.
-- TOP 5에는 백엔드/기술 블로그 기반 아이템을 최소 2개 포함한다.
-- Claude/Anthropic/AI 제품 릴리즈 아이템은 최대 2개까지만 포함한다.
-- Money Agent 또는 Inspiring People Agent 관점의 아이템을 최소 1개 포함한다.
+- Money Agent는 오늘의 주식/시장 소식과 ERP·회계·비즈니스 운영 개념을 함께 확인한다.
+- TOP 5는 관심사 포트폴리오처럼 구성한다. 기술 글 목록처럼 만들지 마라.
+- TOP 5에는 Money Agent 관점의 아이템을 최소 2개 포함한다.
+- Money Agent 아이템 중 하나는 `오늘의 주식/시장 신호`여야 한다.
+- Money Agent 아이템 중 하나는 `오늘의 비즈니스 개념`이어야 한다. 예: ERP, 매출총이익, 영업이익, 재고회전율, 현금흐름, CRM, SCM, SaaS 지표.
+- TOP 5에는 Inspiring People Agent 관점의 아이템을 최소 1개 포함한다.
+- Backend Agent 아이템은 최대 2개까지만 포함한다.
+- AI Agent 아이템도 최대 2개까지만 포함한다.
+- Claude/Anthropic/AI 제품 릴리즈 아이템은 최대 1개까지만 포함한다.
+- 가능하면 Backend, Stock, Business Concept, Inspiring People, AI가 각각 하나 이상 보이게 구성한다.
 - 최근 브리프와 같은 핵심 주제는 제외하고, 새 angle이 있을 때만 포함한다.
+- 각 아이템의 category를 반드시 `AI`, `Backend`, `Stock`, `Business Concept`, `Inspiring People` 중 하나로 표시한다.
 - 단, 최종 결과는 여러 Agent 로그가 아니라 하나의 Morning Signal TOP 5로 합쳐서 작성한다.
 - Paperclip에서 보여줄 수 있도록 이 아이템이 왜 등장했는지 exploration_path를 설명한다.
 - 각 아이템은 클릭하고 싶을 만큼 흥미롭게 쓴다.

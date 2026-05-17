@@ -11,7 +11,9 @@
     "Claude Agent SDK",
     "backend engineering",
     "Korean and global engineering blogs",
-    "money-making automation",
+    "stock market news",
+    "business concepts",
+    "ERP and accounting basics",
     "inspiring people"
   ],
   "priority_sources": [
@@ -39,6 +41,16 @@
       "name": "NAVER D2",
       "url": "https://d2.naver.com/helloworld",
       "reason": "NAVER engineering articles, backend, web, data, infra topics."
+    },
+    {
+      "name": "Yahoo Finance",
+      "url": "https://finance.yahoo.com/",
+      "reason": "Daily stock market news and company-specific market movement."
+    },
+    {
+      "name": "Investopedia",
+      "url": "https://www.investopedia.com/",
+      "reason": "Clear explanations of stocks, accounting, ERP, and business concepts."
     }
   ],
   "output_goal": "Paperclip을 열고 반응하고 싶을 만큼 흥미로운 발견을 한국어로 가져온다."
