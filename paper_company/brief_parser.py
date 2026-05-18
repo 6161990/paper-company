@@ -84,20 +84,20 @@ def clean_heading(line: str) -> str:
 
 def extract_fields(section: str) -> dict[str, str]:
     field_pattern = re.compile(
-        r"(?mi)^\s*(?:\*\*)?([A-Za-z_ ]+)(?:\*\*)?\s*[:：]\s*(.*)$"
+        r"(?mi)^\s*(?:\*\*([A-Za-z_ ]+)\*\*|([A-Za-z_ ]+)\s*[:：])\s*(.*)$"
     )
     matches = list(field_pattern.finditer(section))
     fields: dict[str, str] = {}
 
     for idx, match in enumerate(matches):
-        raw_name = match.group(1).strip().lower()
+        raw_name = (match.group(1) or match.group(2) or "").strip().lower()
         name = FIELD_ALIASES.get(raw_name)
         if name not in FIELD_NAMES:
             continue
 
         value_start = match.end()
         value_end = matches[idx + 1].start() if idx + 1 < len(matches) else len(section)
-        inline = match.group(2).strip()
+        inline = match.group(3).strip()
         rest = section[value_start:value_end].strip()
         value = inline
         if rest:

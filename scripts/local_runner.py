@@ -1,10 +1,15 @@
 import json
 import subprocess
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from paper_company.db import finish_run, start_run
+
 PYTHON = ROOT / ".venv" / "bin" / "python"
 
 
@@ -20,17 +25,47 @@ class Handler(BaseHTTPRequestHandler):
             self._json(404, {"ok": False, "error": "not_found"})
             return
 
-        proc = subprocess.run(
-            [str(PYTHON), "scripts/explore_daily.py"],
-            cwd=ROOT,
-            text=True,
-            capture_output=True,
-            timeout=900,
+        run_id = start_run(service="morning_signal", trigger_type="n8n_local_runner")
+        try:
+            proc = subprocess.run(
+                [str(PYTHON), "scripts/explore_daily.py"],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                timeout=900,
+            )
+        except subprocess.TimeoutExpired as exc:
+            finish_run(
+                run_id,
+                status="timeout",
+                stdout=exc.stdout,
+                stderr=exc.stderr,
+                error="explore_daily.py timed out after 900 seconds",
+            )
+            self._json(
+                504,
+                {
+                    "ok": False,
+                    "run_id": run_id,
+                    "error": "timeout",
+                    "stdout": exc.stdout,
+                    "stderr": exc.stderr,
+                },
+            )
+            return
+
+        finish_run(
+            run_id,
+            status="success" if proc.returncode == 0 else "error",
+            returncode=proc.returncode,
+            stdout=proc.stdout,
+            stderr=proc.stderr,
         )
         self._json(
             200 if proc.returncode == 0 else 500,
             {
                 "ok": proc.returncode == 0,
+                "run_id": run_id,
                 "returncode": proc.returncode,
                 "stdout": proc.stdout,
                 "stderr": proc.stderr,

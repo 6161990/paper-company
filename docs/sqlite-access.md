@@ -25,6 +25,7 @@ sqlite3 data/paper_company.db
 ```sql
 .schema briefs
 .schema feedback
+.schema run_logs
 ```
 
 저장된 Morning Signal 목록:
@@ -87,6 +88,12 @@ sqlite3 data/paper_company.db "SELECT category, title FROM items WHERE brief_id 
 sqlite3 data/paper_company.db "SELECT feedback_type, note, created_at FROM feedback ORDER BY created_at DESC LIMIT 10;"
 ```
 
+최근 실행 로그:
+
+```bash
+sqlite3 data/paper_company.db "SELECT id, trigger_type, status, duration_ms, started_at FROM run_logs ORDER BY started_at DESC LIMIT 10;"
+```
+
 테이블 목록:
 
 ```bash
@@ -100,4 +107,5 @@ briefs
 items
 feedback
 mobile_requests
+run_logs
 ```

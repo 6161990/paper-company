@@ -66,6 +66,20 @@ def init_db() -> None:
                 created_at TEXT NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS run_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                service TEXT NOT NULL,
+                trigger_type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                started_at TEXT NOT NULL,
+                finished_at TEXT,
+                duration_ms INTEGER,
+                returncode INTEGER,
+                stdout TEXT,
+                stderr TEXT,
+                error TEXT
+            );
+
             """
         )
 
@@ -181,6 +195,81 @@ def save_feedback(
         return int(cursor.lastrowid)
 
 
+def start_run(*, service: str, trigger_type: str) -> int:
+    init_db()
+    now = datetime.now().isoformat(timespec="seconds")
+    with connect() as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO run_logs (service, trigger_type, status, started_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (service, trigger_type, "running", now),
+        )
+        return int(cursor.lastrowid)
+
+
+def finish_run(
+    run_id: int,
+    *,
+    status: str,
+    returncode: int | None = None,
+    stdout: str | None = None,
+    stderr: str | None = None,
+    error: str | None = None,
+) -> None:
+    init_db()
+    now = datetime.now().isoformat(timespec="seconds")
+    with connect() as conn:
+        row = conn.execute("SELECT started_at FROM run_logs WHERE id = ?", (run_id,)).fetchone()
+        duration_ms = None
+        if row is not None:
+            started_at = datetime.fromisoformat(row["started_at"])
+            finished_at = datetime.fromisoformat(now)
+            duration_ms = int((finished_at - started_at).total_seconds() * 1000)
+
+        conn.execute(
+            """
+            UPDATE run_logs
+            SET
+                status = ?,
+                finished_at = ?,
+                duration_ms = ?,
+                returncode = ?,
+                stdout = ?,
+                stderr = ?,
+                error = ?
+            WHERE id = ?
+            """,
+            (status, now, duration_ms, returncode, stdout, stderr, error, run_id),
+        )
+
+
+def list_recent_runs(limit: int = 20) -> list[sqlite3.Row]:
+    init_db()
+    with connect() as conn:
+        return conn.execute(
+            """
+            SELECT
+                id,
+                service,
+                trigger_type,
+                status,
+                started_at,
+                finished_at,
+                duration_ms,
+                returncode,
+                stdout,
+                stderr,
+                error
+            FROM run_logs
+            ORDER BY started_at DESC, id DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+
+
 def get_latest_brief() -> sqlite3.Row | None:
     init_db()
     with connect() as conn:
@@ -229,6 +318,8 @@ def list_recent_feedback(limit: int = 20) -> list[sqlite3.Row]:
             """
             SELECT
                 f.id,
+                f.item_id,
+                f.brief_id,
                 f.feedback_type,
                 f.note,
                 f.created_at,

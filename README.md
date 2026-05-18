@@ -83,6 +83,32 @@ n8n 없이 바로 실행할 수도 있다.
 .venv/bin/python scripts/explore_daily.py
 ```
 
+## Paperclip UI
+
+SQLite에 저장된 Morning Signal과 피드백을 브라우저에서 본다.
+
+```bash
+.venv/bin/python scripts/paperclip_server.py
+```
+
+브라우저:
+
+```text
+http://127.0.0.1:8720
+```
+
+현재 기능:
+
+```text
+- 최신 Morning Signal TOP 5 카드
+- Source / Why Now / Why Fit / Next Action / Expansion / Exploration Path
+- Save / Like / Dislike / Acted / Content 피드백 버튼
+- 전체 Morning Signal 피드백 입력
+- n8n/local runner 실행 상태 표시
+- 실행 로그 표시
+- 최근 피드백 표시
+```
+
 ## SQLite
 
 DB 열기:

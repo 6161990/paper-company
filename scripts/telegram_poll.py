@@ -10,7 +10,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from paper_company.db import get_latest_brief, list_recent_feedback, save_feedback, save_mobile_request
+from paper_company.db import (
+    finish_run,
+    get_latest_brief,
+    list_recent_feedback,
+    save_feedback,
+    save_mobile_request,
+    start_run,
+)
 
 
 API_BASE = "https://api.telegram.org/bot"
@@ -103,12 +110,31 @@ def latest_brief_text() -> str:
 
 
 def run_exploration() -> tuple[bool, str]:
-    proc = subprocess.run(
-        [str(ROOT / ".venv" / "bin" / "python"), "scripts/explore_daily.py"],
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-        timeout=1200,
+    run_id = start_run(service="morning_signal", trigger_type="telegram_run")
+    try:
+        proc = subprocess.run(
+            [str(ROOT / ".venv" / "bin" / "python"), "scripts/explore_daily.py"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            timeout=1200,
+        )
+    except subprocess.TimeoutExpired as exc:
+        finish_run(
+            run_id,
+            status="timeout",
+            stdout=exc.stdout,
+            stderr=exc.stderr,
+            error="explore_daily.py timed out after 1200 seconds",
+        )
+        return False, "explore_daily.py timed out after 1200 seconds"
+
+    finish_run(
+        run_id,
+        status="success" if proc.returncode == 0 else "error",
+        returncode=proc.returncode,
+        stdout=proc.stdout,
+        stderr=proc.stderr,
     )
     if proc.returncode != 0:
         return False, proc.stderr or proc.stdout or "explore_daily.py failed"

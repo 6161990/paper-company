@@ -71,7 +71,7 @@ Legend:
 | Markdown brief save | [x] | Saves to `data/briefs/YYYY-MM-DD.md` |
 | n8n local | [x] | Docker Compose exists and n8n can run locally |
 | SQLite | [x] | Briefs and TOP 5 items are saved to SQLite |
-| Paperclip UI | [ ] | No UI yet |
+| Paperclip UI | [~] | Local MVP shows Morning Signal, run state, logs, and feedback history |
 | n8n workflow | [~] | Local runner path verified; n8n UI workflow/manual trigger still needs final confirmation |
 | Telegram delivery | [x] | Local polling bot can send `/today` and `/run` results |
 | Telegram commands | [~] | Local polling bot supports `/ping`, `/today`, `/run`, `/save`, `/feedback`; `/ask` pending |
@@ -115,6 +115,7 @@ Legend:
 [x] create `items` table
 [x] create `feedback` table
 [x] create `mobile_requests` table
+[x] create `run_logs` table
 [x] create DB helper module
 [x] save Morning Signal to `briefs`
 [x] parse TOP 5 into `items`
@@ -143,7 +144,7 @@ n8n 버튼 또는 수동 실행으로 `explore_daily.py`를 실행한다.
 [~] add HTTP Request node
 [~] POST `http://host.docker.internal:8711/run/explore`
 [ ] confirm full successful run from n8n UI
-[ ] inspect success/failure logs
+[x] inspect success/failure logs in Paperclip after local runner execution
 ```
 
 완료 기준:
@@ -217,17 +218,31 @@ SQLite에 저장된 결과를 브라우저에서 본다.
 작업:
 
 ```text
-[ ] backend endpoint: latest brief
-[ ] page: Morning Signal
-[ ] cards: TOP 5
-[ ] buttons: Like / Dislike / Save / Acted
-[ ] store feedback
+[x] backend endpoint: latest brief
+[x] page: Morning Signal
+[x] cards: TOP 5
+[x] buttons: Like / Dislike / Save / Acted
+[x] store feedback
+[x] run status integration
+[x] logs/history view
+[x] feedback history view
+[ ] item-level feedback polish
 ```
 
 완료 기준:
 
 ```text
 브라우저에서 오늘 결과를 보고 버튼으로 피드백을 저장할 수 있다.
+```
+
+현재 로컬 실행:
+
+```bash
+.venv/bin/python scripts/paperclip_server.py
+```
+
+```text
+http://127.0.0.1:8720
 ```
 
 ### 6. VPS Deployment
@@ -261,7 +276,7 @@ VPS에서 오전 7시에 자동 실행되고 Telegram으로 도착한다.
 
 ```text
 1. Confirm full successful Morning Signal run from n8n UI
-2. Build Paperclip UI MVP
+2. Polish Paperclip feedback/history views
 3. Deploy to VPS for 7AM automation
 ```
 
