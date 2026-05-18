@@ -38,7 +38,7 @@ VPS는 `Virtual Private Server`의 줄임말이다.
 - Claude Agent SDK exploration script
 - supporting source scripts
 - Telegram sending script
-- incident search script
+- Telegram command scripts
 
 Claude Agent SDK는 서버처럼 계속 띄워놓는 대상이 아니다. 보통은 n8n이 필요할 때 Python 스크립트를 실행하고, Claude Agent SDK가 탐색과 큐레이션을 끝낸 뒤 종료된다.
 

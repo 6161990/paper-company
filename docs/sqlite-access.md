@@ -43,6 +43,24 @@ FROM briefs
 WHERE run_date = '2026-05-17';
 ```
 
+브리프별 TOP 5 아이템 보기:
+
+```sql
+SELECT b.run_date, i.category, i.title
+FROM items i
+JOIN briefs b ON b.id = i.brief_id
+ORDER BY b.run_date DESC, i.id;
+```
+
+최신 브리프의 아이템만 보기:
+
+```sql
+SELECT category, title, source
+FROM items
+WHERE brief_id = (SELECT id FROM briefs ORDER BY run_date DESC LIMIT 1)
+ORDER BY id;
+```
+
 나가기:
 
 ```sql
@@ -55,6 +73,18 @@ WHERE run_date = '2026-05-17';
 
 ```bash
 sqlite3 data/paper_company.db "SELECT id, run_date, title FROM briefs ORDER BY run_date DESC;"
+```
+
+최신 아이템:
+
+```bash
+sqlite3 data/paper_company.db "SELECT category, title FROM items WHERE brief_id = (SELECT id FROM briefs ORDER BY run_date DESC LIMIT 1);"
+```
+
+최근 피드백:
+
+```bash
+sqlite3 data/paper_company.db "SELECT feedback_type, note, created_at FROM feedback ORDER BY created_at DESC LIMIT 10;"
 ```
 
 테이블 목록:
@@ -70,6 +100,4 @@ briefs
 items
 feedback
 mobile_requests
-incident_searches
 ```
-

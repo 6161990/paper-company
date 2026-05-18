@@ -6,13 +6,15 @@ Paper Company의 핵심은 피드백이다.
 
 ## Feedback Channel
 
-피드백 창구는 Paperclip UI다.
+피드백 창구는 두 단계로 간다.
 
-Telegram은 아침 알림용이다. 피드백은 Paperclip에서 받는다.
+초기에는 Telegram에서 `/save`, `/feedback`으로 바로 받는다.
+Paperclip UI가 생기면 카드별 버튼 피드백을 주 창구로 옮긴다.
 
 이유:
 
-- Telegram 버튼만으로는 깊은 피드백을 받기 어렵다.
+- Telegram은 지금 바로 모바일에서 피드백을 남기기 쉽다.
+- Telegram 텍스트만으로는 카드별 정밀 피드백을 받기 어렵다.
 - Paperclip은 추천 이유, 원본 링크, Agent 로그를 함께 보여줄 수 있다.
 - 내가 왜 좋았는지/싫었는지 남기기 좋다.
 
@@ -88,6 +90,7 @@ items
 feedback
   id
   item_id
+  brief_id
   feedback_type
   note
   created_at
@@ -122,9 +125,13 @@ Avoid abstract trend commentary without a 30-minute action.
 
 ### Step 1: Store Immediately
 
-Paperclip에서 버튼을 누르면 즉시 SQLite에 저장한다.
+Telegram 또는 Paperclip에서 피드백을 주면 즉시 SQLite에 저장한다.
 
 ```text
+send /feedback 오늘 주식/비즈니스 개념 좋았어
+  -> SQLite feedback insert
+  -> paper_company/recent_feedback.json refresh
+
 click Like
   -> POST /feedback
   -> SQLite insert

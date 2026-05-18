@@ -10,7 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from paper_company.prompts import RANKING_PROMPT
-from paper_company.db import save_brief_record
+from paper_company.brief_parser import parse_brief_items
+from paper_company.db import replace_items, save_brief_record
 
 
 INTERESTS_PATH = ROOT / "paper_company" / "interests.json"
@@ -70,6 +71,7 @@ def save_brief(text: str) -> tuple[Path, int]:
         markdown_path=path,
         content_hash=digest,
     )
+    replace_items(brief_id, parse_brief_items(text))
     return path, brief_id
 
 

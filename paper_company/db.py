@@ -66,15 +66,6 @@ def init_db() -> None:
                 created_at TEXT NOT NULL
             );
 
-            CREATE TABLE IF NOT EXISTS incident_searches (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                symptom TEXT NOT NULL,
-                context TEXT,
-                suspected_causes TEXT,
-                checklist TEXT,
-                sources TEXT,
-                created_at TEXT NOT NULL
-            );
             """
         )
 
@@ -110,3 +101,144 @@ def save_brief_record(
             raise RuntimeError(f"Failed to save brief for {run_date}")
         return int(row["id"])
 
+
+def replace_items(brief_id: int, items: list[dict]) -> None:
+    init_db()
+    now = datetime.now().isoformat(timespec="seconds")
+    with connect() as conn:
+        conn.execute("DELETE FROM items WHERE brief_id = ?", (brief_id,))
+        conn.executemany(
+            """
+            INSERT INTO items (
+                brief_id,
+                title,
+                source,
+                url,
+                category,
+                hook,
+                why_now,
+                why_fit,
+                next_action,
+                expansion,
+                exploration_path,
+                score,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    brief_id,
+                    item.get("title") or "Untitled",
+                    item.get("source"),
+                    item.get("url"),
+                    item.get("category"),
+                    item.get("hook"),
+                    item.get("why_now"),
+                    item.get("why_fit"),
+                    item.get("next_action"),
+                    item.get("expansion"),
+                    item.get("exploration_path"),
+                    item.get("score"),
+                    now,
+                )
+                for item in items
+            ],
+        )
+
+
+def save_mobile_request(*, command: str, input_text: str, response_text: str | None) -> int:
+    init_db()
+    now = datetime.now().isoformat(timespec="seconds")
+    with connect() as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO mobile_requests (command, input_text, response_text, created_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (command, input_text, response_text, now),
+        )
+        return int(cursor.lastrowid)
+
+
+def save_feedback(
+    *,
+    feedback_type: str,
+    note: str,
+    brief_id: int | None = None,
+    item_id: int | None = None,
+) -> int:
+    init_db()
+    now = datetime.now().isoformat(timespec="seconds")
+    with connect() as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO feedback (item_id, brief_id, feedback_type, note, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (item_id, brief_id, feedback_type, note, now),
+        )
+        return int(cursor.lastrowid)
+
+
+def get_latest_brief() -> sqlite3.Row | None:
+    init_db()
+    with connect() as conn:
+        return conn.execute(
+            """
+            SELECT id, run_date, title, content, markdown_path, updated_at
+            FROM briefs
+            ORDER BY run_date DESC, updated_at DESC
+            LIMIT 1
+            """
+        ).fetchone()
+
+
+def get_items_for_brief(brief_id: int) -> list[sqlite3.Row]:
+    init_db()
+    with connect() as conn:
+        return conn.execute(
+            """
+            SELECT
+                id,
+                brief_id,
+                title,
+                source,
+                url,
+                category,
+                hook,
+                why_now,
+                why_fit,
+                next_action,
+                expansion,
+                exploration_path,
+                score,
+                created_at
+            FROM items
+            WHERE brief_id = ?
+            ORDER BY id
+            """,
+            (brief_id,),
+        ).fetchall()
+
+
+def list_recent_feedback(limit: int = 20) -> list[sqlite3.Row]:
+    init_db()
+    with connect() as conn:
+        return conn.execute(
+            """
+            SELECT
+                f.id,
+                f.feedback_type,
+                f.note,
+                f.created_at,
+                b.run_date AS brief_date,
+                i.title AS item_title
+            FROM feedback f
+            LEFT JOIN briefs b ON b.id = f.brief_id
+            LEFT JOIN items i ON i.id = f.item_id
+            ORDER BY f.created_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()

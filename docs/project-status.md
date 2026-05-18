@@ -23,7 +23,6 @@ Paperclip에서 결과와 피드백을 볼 수 있게 만든다.
                  ┌─────────────────────┐
                  │  Telegram Mobile     │
                  │  - Morning Signal    │
-                 │  - /incident         │
                  │  - /feedback         │
                  └──────────┬──────────┘
                             │
@@ -41,7 +40,6 @@ Paperclip에서 결과와 피드백을 볼 수 있게 만든다.
 │ - Morning Signal                                             │
 │ - feedback                                                   │
 │ - mobile requests                                            │
-│ - incident searches                                          │
 └──────────────────────────────┬───────────────────────────────┘
                                │
                                v
@@ -72,11 +70,11 @@ Legend:
 | Interest balance guard | [x] | Prompt limits AI/backend overrepresentation and requires Money/People items |
 | Markdown brief save | [x] | Saves to `data/briefs/YYYY-MM-DD.md` |
 | n8n local | [x] | Docker Compose exists and n8n can run locally |
-| SQLite | [~] | Schema exists; `explore_daily.py` now saves briefs to SQLite |
+| SQLite | [x] | Briefs and TOP 5 items are saved to SQLite |
 | Paperclip UI | [ ] | No UI yet |
 | n8n workflow | [~] | Local runner path verified; n8n UI workflow/manual trigger still needs final confirmation |
-| Telegram delivery | [ ] | Bot not created or connected |
-| Telegram commands | [ ] | `/ping`, `/incident`, `/feedback` not implemented |
+| Telegram delivery | [x] | Local polling bot can send `/today` and `/run` results |
+| Telegram commands | [~] | Local polling bot supports `/ping`, `/today`, `/run`, `/save`, `/feedback`; `/ask` pending |
 | VPS deployment | [ ] | Not online; local only |
 
 ## Critical Path To Online Morning Signal
@@ -117,16 +115,15 @@ Legend:
 [x] create `items` table
 [x] create `feedback` table
 [x] create `mobile_requests` table
-[x] create `incident_searches` table
 [x] create DB helper module
 [x] save Morning Signal to `briefs`
-[ ] parse TOP 5 into `items`
+[x] parse TOP 5 into `items`
 ```
 
 완료 기준:
 
 ```text
-explore_daily.py 실행 결과가 Markdown뿐 아니라 SQLite `briefs` 테이블에도 저장된다.
+explore_daily.py 실행 결과가 Markdown, SQLite `briefs`, SQLite `items` 테이블에 저장된다.
 ```
 
 ### 2. n8n Local Workflow
@@ -164,16 +161,29 @@ n8n에서 버튼을 누르면 local runner가 호출되고 Morning Signal 파일
 작업:
 
 ```text
-[ ] create Telegram bot with BotFather
-[ ] store bot token in `.env`
-[ ] connect n8n Telegram Trigger
-[ ] implement `/ping`
+[x] create Telegram bot with BotFather
+[x] store bot token in `.env`
+[x] run `scripts/telegram_poll.py`
+[x] implement local `/ping` handler
+[x] implement local `/today` handler
+[x] implement local `/run` handler
+[x] implement local `/save` handler
+[x] implement local `/feedback` handler
+[x] store mobile requests in SQLite
+[x] store feedback in SQLite
+[ ] connect n8n Telegram Trigger later
 ```
 
 완료 기준:
 
 ```text
 /ping -> pong from Paper Company
+```
+
+현재 확인:
+
+```text
+/start, /ping, /today, /run, /help, /save, /feedback 요청이 `mobile_requests`에 저장됨.
 ```
 
 ### 4. Telegram Morning Signal Delivery
@@ -185,9 +195,9 @@ n8n에서 버튼을 누르면 local runner가 호출되고 Morning Signal 파일
 작업:
 
 ```text
-[ ] read latest `data/briefs/YYYY-MM-DD.md`
-[ ] send message to Telegram
-[ ] handle long message splitting
+[x] read latest SQLite brief
+[x] send message to Telegram
+[x] handle long message splitting
 ```
 
 완료 기준:
@@ -195,6 +205,8 @@ n8n에서 버튼을 누르면 local runner가 호출되고 Morning Signal 파일
 ```text
 Morning Signal이 Telegram으로 도착한다.
 ```
+
+현재는 로컬 polling bot 기준으로 완료됐다. 온라인 운영에서는 VPS 또는 n8n Telegram Trigger로 옮겨야 한다.
 
 ### 5. Paperclip UI MVP
 
@@ -248,9 +260,9 @@ VPS에서 오전 7시에 자동 실행되고 Telegram으로 도착한다.
 품질 튜닝 없이 바로 진행 가능한 순서:
 
 ```text
-1. Confirm full successful run from n8n UI
-2. Finish SQLite item parsing
-3. Telegram `/ping`
+1. Confirm full successful Morning Signal run from n8n UI
+2. Build Paperclip UI MVP
+3. Deploy to VPS for 7AM automation
 ```
 
 이 세 개가 되면 Paper Company는 단순 스크립트가 아니라 관리 가능한 시스템이 된다.
@@ -263,7 +275,6 @@ VPS에서 오전 7시에 자동 실행되고 Telegram으로 도착한다.
 - Morning Signal 품질 튜닝
 - Paperclip 디자인 완성도
 - VPS 선택
-- Telegram `/incident`
 - 실시간 Re-rank
 - 장기 피드백 학습
 ```
@@ -273,9 +284,9 @@ VPS에서 오전 7시에 자동 실행되고 Telegram으로 도착한다.
 다음 구현을 시작하려면 하나만 고르면 된다.
 
 ```text
-Option A: SQLite item parsing을 마무리한다.
-Option B: n8n에서 스크립트 실행부터 연결한다.
-Option C: Telegram /ping부터 만든다.
+Option A: n8n UI에서 성공 실행을 최종 확인한다.
+Option B: Paperclip UI MVP를 만든다.
+Option C: VPS 배포 준비를 시작한다.
 ```
 
-추천은 `Option A -> Option B -> Option C`다. 저장소가 먼저 있어야 이후 실행 결과와 피드백을 잃지 않는다.
+추천은 `Option A -> Option B -> Option C`다. n8n 실행 경로를 확정한 뒤 UI에서 결과와 피드백을 관리하고, 마지막에 온라인 운영으로 옮긴다.
