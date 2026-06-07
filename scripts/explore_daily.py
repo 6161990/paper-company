@@ -9,8 +9,8 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from paper_company.prompts import RANKING_PROMPT
-from paper_company.brief_parser import parse_brief_items
+from paper_company.prompts import DEEP_DIVE_PROMPT, get_agent_for_weekday
+from paper_company.brief_parser import parse_brief_auto
 from paper_company.db import replace_items, save_brief_record
 
 
@@ -71,8 +71,46 @@ def save_brief(text: str) -> tuple[Path, int]:
         markdown_path=path,
         content_hash=digest,
     )
-    replace_items(brief_id, parse_brief_items(text))
+    replace_items(brief_id, parse_brief_auto(text))
     return path, brief_id
+
+
+def get_today_weekday() -> int:
+    return datetime.now(KST).weekday()
+
+
+def build_prompt(interests: dict, feedback: dict, recent_briefs: str) -> str:
+    weekday = get_today_weekday()
+    agent = get_agent_for_weekday(weekday)
+
+    prompt = DEEP_DIVE_PROMPT.format(
+        agent_name=agent["name"],
+        agent_description=agent["description"],
+    )
+
+    prompt += f"""
+
+오늘의 Deep Dive를 만들기 위해 웹을 탐색해라.
+
+사용자 프로필:
+{json.dumps(interests, ensure_ascii=False, indent=2)}
+
+최근 피드백:
+{json.dumps(feedback, ensure_ascii=False, indent=2)}
+
+최근 Morning Signal이다. 아래와 같은 핵심 주제, 출처, angle은 반복하지 마라:
+{recent_briefs}
+
+탐색 규칙:
+- 반드시 한국어로 작성한다.
+- DEEP DIVE는 반드시 1개만 선정한다.
+- CANDIDATES는 3-5개 선정한다.
+- 오늘 담당 에이전트({agent["name"]}) 관점을 우선하되, Free 에이전트일 때는 가장 강렬한 발견을 선택한다.
+- 우선 확인 소스: {", ".join(agent.get("sources", []))}
+- 각 아이템에 link(URL), description, 왜 더 파야 하는가, 다음 30분 액션을 반드시 포함한다.
+- 출력은 반드시 위의 형식을 따른다 (## DEEP DIVE, ## CANDIDATES 헤더 포함).
+"""
+    return prompt
 
 
 def print_progress(message: object) -> None:
@@ -112,46 +150,14 @@ def print_progress(message: object) -> None:
 
 
 async def main() -> None:
+    weekday = get_today_weekday()
+    agent = get_agent_for_weekday(weekday)
+
     interests = json.loads(INTERESTS_PATH.read_text())
     feedback = json.loads(FEEDBACK_PATH.read_text())
     recent_briefs = load_recent_briefs()
-    prompt = f"""{RANKING_PROMPT}
 
-오늘의 Morning Signal을 만들기 위해 웹을 탐색해라.
-
-사용자 프로필:
-{json.dumps(interests, ensure_ascii=False, indent=2)}
-
-최근 피드백:
-{json.dumps(feedback, ensure_ascii=False, indent=2)}
-
-최근 Morning Signal이다. 아래와 같은 핵심 아이템, 제목, 출처, angle은 반복하지 마라.
-특히 같은 Claude/AI 릴리즈를 날짜만 바꿔 다시 추천하지 마라.
-{recent_briefs}
-
-탐색 규칙:
-- 반드시 한국어로 작성한다.
-- 일반 뉴스 요약이나 기술 브리핑처럼 쓰지 않는다.
-- AI, backend, stocks, ERP/business concepts, inspiring people과 연결되는 좋은 방향을 발견하면 더 깊게 파고든다.
-- 하나의 실행 안에서 AI Agent, Backend Agent, Money Agent, Inspiring People Agent의 관점으로 탐색한다.
-- Backend Agent는 LINE/LY Corporation Tech Blog, 우아한형제들 기술블로그, Google Developers Blog, NAVER D2를 우선 확인한다.
-- Money Agent는 오늘의 주식/시장 소식과 ERP·회계·비즈니스 운영 개념을 함께 확인한다.
-- TOP 5는 관심사 포트폴리오처럼 구성한다. 기술 글 목록처럼 만들지 마라.
-- TOP 5에는 Money Agent 관점의 아이템을 최소 2개 포함한다.
-- Money Agent 아이템 중 하나는 `오늘의 주식/시장 신호`여야 한다.
-- Money Agent 아이템 중 하나는 `오늘의 비즈니스 개념`이어야 한다. 예: ERP, 매출총이익, 영업이익, 재고회전율, 현금흐름, CRM, SCM, SaaS 지표.
-- TOP 5에는 Inspiring People Agent 관점의 아이템을 최소 1개 포함한다.
-- Backend Agent 아이템은 최대 2개까지만 포함한다.
-- AI Agent 아이템도 최대 2개까지만 포함한다.
-- Claude/Anthropic/AI 제품 릴리즈 아이템은 최대 1개까지만 포함한다.
-- 가능하면 Backend, Stock, Business Concept, Inspiring People, AI가 각각 하나 이상 보이게 구성한다.
-- 최근 브리프와 같은 핵심 주제는 제외하고, 새 angle이 있을 때만 포함한다.
-- 각 아이템의 category를 반드시 `AI`, `Backend`, `Stock`, `Business Concept`, `Inspiring People` 중 하나로 표시한다.
-- 단, 최종 결과는 여러 Agent 로그가 아니라 하나의 Morning Signal TOP 5로 합쳐서 작성한다.
-- Paperclip에서 보여줄 수 있도록 이 아이템이 왜 등장했는지 exploration_path를 설명한다.
-- 각 아이템은 클릭하고 싶을 만큼 흥미롭게 쓴다.
-- 각 아이템마다 30분 안에 할 수 있는 next_action을 포함한다.
-"""
+    prompt = build_prompt(interests, feedback, recent_briefs)
 
     try:
         from claude_agent_sdk import ClaudeAgentOptions, query
@@ -163,7 +169,7 @@ async def main() -> None:
         return
 
     messages: list[str] = []
-    print("Paper Company 탐색을 시작합니다.", flush=True)
+    print(f"Paper Company 탐색을 시작합니다. (담당: {agent['name']} Agent)", flush=True)
 
     try:
         async for message in query(

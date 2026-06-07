@@ -19,14 +19,18 @@ FIELD_ALIASES = {
     "source": "source",
     "why_now": "why_now",
     "why now": "why_now",
+    "왜 더 파야 하는가": "why_now",
     "why_fit": "why_fit",
     "why fit": "why_fit",
     "next_action": "next_action",
     "next action": "next_action",
+    "다음 30분 액션": "next_action",
     "expansion": "expansion",
     "exploration_path": "exploration_path",
     "exploration path": "exploration_path",
     "category": "category",
+    "link": "url",
+    "description": "hook",
 }
 
 
@@ -154,3 +158,34 @@ def clean_block(value: str | None) -> str | None:
     value = value.strip()
     value = re.sub(r"^>\s?", "", value, flags=re.MULTILINE)
     return value
+
+
+def detect_format(content: str) -> str:
+    if "## DEEP DIVE" in content or "## Deep Dive" in content:
+        return "deep_dive"
+    return "ranking"
+
+
+def parse_deep_dive_brief(content: str) -> list[dict]:
+    deep_dive_match = re.search(
+        r"## DEEP DIVE\s*\n(.*?)(?=## CANDIDATES|\Z)",
+        content,
+        re.IGNORECASE | re.DOTALL,
+    )
+
+    items = []
+
+    if deep_dive_match:
+        dd_section = deep_dive_match.group(1).strip()
+        dd_item = parse_item_section(f"### Deep Dive\n{dd_section}")
+        dd_item["status"] = "active"
+        items.append(dd_item)
+
+    return items
+
+
+def parse_brief_auto(content: str) -> list[dict]:
+    fmt = detect_format(content)
+    if fmt == "deep_dive":
+        return parse_deep_dive_brief(content)
+    return parse_brief_items(content)

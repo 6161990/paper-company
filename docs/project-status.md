@@ -75,7 +75,7 @@ Legend:
 | n8n workflow | [~] | Local runner path verified; n8n UI workflow/manual trigger still needs final confirmation |
 | Telegram delivery | [x] | Local polling bot can send `/today` and `/run` results |
 | Telegram commands | [~] | Local polling bot supports `/ping`, `/today`, `/run`, `/save`, `/feedback`; `/ask` pending |
-| VPS deployment | [ ] | Not online; local only |
+| VPS deployment | [~] | Deployment guide and systemd units exist; actual server setup pending |
 
 ## Critical Path To Online Morning Signal
 
@@ -226,7 +226,7 @@ SQLite에 저장된 결과를 브라우저에서 본다.
 [x] run status integration
 [x] logs/history view
 [x] feedback history view
-[ ] item-level feedback polish
+[x] item-level feedback polish
 ```
 
 완료 기준:
@@ -258,8 +258,9 @@ http://127.0.0.1:8720
 [ ] install Docker
 [ ] clone repo
 [ ] configure `.env`
+[ ] Claude auth on VPS
+[ ] install systemd services
 [ ] run n8n on VPS
-[ ] deploy scripts
 [ ] test Telegram delivery from VPS
 [ ] add 7AM schedule
 ```

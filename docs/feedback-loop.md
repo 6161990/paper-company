@@ -138,6 +138,16 @@ click Like
   -> UI updates card state
 ```
 
+현재 Paperclip MVP에서는 카드별 피드백 상태가 보인다.
+
+```text
+Save 1
+Like 2
+No feedback yet
+```
+
+이미 누른 피드백 타입은 카드 버튼이 활성 상태로 표시된다.
+
 ### Step 2: Re-rank On Demand
 
 나중에는 `Re-rank with my feedback` 버튼을 둔다.

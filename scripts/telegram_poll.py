@@ -102,11 +102,102 @@ def command_body(text: str) -> str:
     return parts[1].strip() if len(parts) > 1 else ""
 
 
+def format_deep_dive(content: str) -> str:
+    """Markdown 파일을 Telegram 가독성있게 포맷팅"""
+    lines = content.strip().split("\n")
+    result = []
+    in_action = False
+    action_count = 0
+
+    for line in lines:
+        # ## DEEP DIVE 제목
+        if line.startswith("## DEEP DIVE"):
+            result.append("📍 *DEEP DIVE*")
+            continue
+
+        # ### 제목
+        if line.startswith("### "):
+            title = line.replace("### ", "").strip()
+            result.append(f"\n*{title}*")
+            continue
+
+        # **category**
+        if line.startswith("**category**"):
+            category = line.replace("**category**", "").strip()
+            emoji_map = {
+                "AI": "🤖",
+                "Backend": "⚙️",
+                "Money": "💰",
+                "Stock": "📈",
+                "Business": "💼",
+                "People": "👤",
+            }
+            emoji = next(
+                (v for k, v in emoji_map.items() if k.lower() in category.lower()),
+                "📌",
+            )
+            result.append(f"{emoji} {category}")
+            continue
+
+        # **link**
+        if line.startswith("**link**"):
+            url = line.replace("**link**", "").strip()
+            result.append(f"🔗 [링크보기]({url})")
+            continue
+
+        # **description**
+        if line.startswith("**description**"):
+            desc = line.replace("**description**", "").strip()
+            result.append(f"\n_{desc}_")
+            continue
+
+        # **왜 더 파야 하는가** 또는 **why**
+        if "왜 더 파야" in line or "왜 파야" in line:
+            why = line.split("**", 2)[-1].strip() if "**" in line else line
+            result.append(f"\n💡 *왜?* {why}")
+            in_action = False
+            continue
+
+        # **다음 30분 액션**
+        if "30분 액션" in line or "30분 action" in line:
+            result.append(f"\n⏱️ *30분 액션*")
+            in_action = True
+            action_count = 0
+            continue
+
+        # 액션 항목들 (1. 2. 3. 으로 시작)
+        if in_action and line.strip() and (
+            line.strip()[0].isdigit() and ". " in line
+        ):
+            action_text = line.strip().split(". ", 1)[1] if ". " in line else line
+            action_count += 1
+            result.append(f"{action_count}️⃣ {action_text}")
+            continue
+
+        # 빈 줄
+        if not line.strip():
+            continue
+
+        # 다른 필드들 (hook, expansion 등)
+        if line.startswith("**") and "**" in line[2:]:
+            parts = line.split("**")
+            if len(parts) >= 3:
+                key = parts[1]
+                value = parts[2].strip()
+                if value:
+                    result.append(f"• _{key}_: {value}")
+            continue
+
+    return "\n".join(result)
+
+
 def latest_brief_text() -> str:
     brief = get_latest_brief()
     if brief is None:
         return "아직 저장된 Morning Signal이 없습니다. /run 으로 먼저 생성해줘."
-    return f"{brief['title']}\n\n{brief['content']}"
+
+    formatted = format_deep_dive(brief["content"])
+    return f"✨ *{brief['title']}*\n\n{formatted}"
 
 
 def run_exploration() -> tuple[bool, str]:
@@ -235,9 +326,14 @@ def poll(token: str) -> None:
                 if chat_id is None or not text:
                     continue
 
+                command = command_name(text)
+                print(f"received {command} from chat {chat_id}", flush=True)
+                if command == "/run":
+                    send_message(token, chat_id, "Morning Signal 생성을 시작했습니다. 보통 몇 분 걸립니다.")
+
                 reply, is_long = handle_text(text)
                 save_mobile_request(
-                    command=command_name(text),
+                    command=command,
                     input_text=text,
                     response_text=reply,
                 )
@@ -245,7 +341,7 @@ def poll(token: str) -> None:
                     send_long_message(token, chat_id, reply)
                 else:
                     send_message(token, chat_id, reply)
-                print(f"handled {command_name(text)} from chat {chat_id}")
+                print(f"handled {command} from chat {chat_id}", flush=True)
         except KeyboardInterrupt:
             print("Telegram bot stopped.")
             return

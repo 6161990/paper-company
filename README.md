@@ -103,6 +103,7 @@ http://127.0.0.1:8720
 - 최신 Morning Signal TOP 5 카드
 - Source / Why Now / Why Fit / Next Action / Expansion / Exploration Path
 - Save / Like / Dislike / Acted / Content 피드백 버튼
+- 카드별 피드백 카운트와 활성 버튼 상태
 - 전체 Morning Signal 피드백 입력
 - n8n/local runner 실행 상태 표시
 - 실행 로그 표시
@@ -149,6 +150,7 @@ local runner는 실행 중인 터미널에서 `Ctrl+C`로 종료한다.
 - [Vision](docs/vision.md)
 - [Roadmap](docs/roadmap.md)
 - [Runtime Plan](docs/runtime-plan.md)
+- [VPS Deployment](docs/vps-deployment.md)
 - [Feedback Loop](docs/feedback-loop.md)
 - [Telegram Interface](docs/telegram-interface.md)
 - [Output Experience](docs/output-experience.md)

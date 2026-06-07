@@ -1,5 +1,6 @@
 import json
 import sys
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -13,7 +14,9 @@ from paper_company.db import (
     list_recent_feedback,
     list_recent_runs,
     save_feedback,
+    reveal_next_item,
 )
+from paper_company.prompts import get_agent_for_weekday
 
 
 HOST = "127.0.0.1"
@@ -22,10 +25,17 @@ FEEDBACK_PATH = ROOT / "paper_company" / "recent_feedback.json"
 
 
 def row_to_dict(row) -> dict:
-    return {key: row[key] for key in row.keys()}
+    result = {}
+    for key in row.keys():
+        val = row[key]
+        result[key] = str(val) if val is not None else None
+    return result
 
 
 def latest_payload() -> dict:
+    weekday = datetime.now().weekday()
+    today_agent = get_agent_for_weekday(weekday)["name"]
+
     brief = get_latest_brief()
     if brief is None:
         return {
@@ -33,6 +43,7 @@ def latest_payload() -> dict:
             "items": [],
             "feedback": [row_to_dict(row) for row in list_recent_feedback()],
             "runs": [row_to_dict(row) for row in list_recent_runs()],
+            "today_agent": today_agent,
         }
 
     brief_data = row_to_dict(brief)
@@ -44,6 +55,7 @@ def latest_payload() -> dict:
         "items": items,
         "feedback": feedback,
         "runs": runs,
+        "today_agent": today_agent,
     }
 
 
@@ -78,6 +90,21 @@ class PaperclipHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
+
+        if parsed.path == "/api/next":
+            brief = get_latest_brief()
+            if brief is None:
+                self.send_json({"ok": False, "error": "no brief"}, status=404)
+                return
+
+            item = reveal_next_item(int(brief["id"]))
+            if item is None:
+                self.send_json({"ok": False, "exhausted": True})
+                return
+
+            self.send_json({"ok": True, "item": row_to_dict(item)})
+            return
+
         if parsed.path != "/api/feedback":
             self.send_error(404)
             return
@@ -588,6 +615,31 @@ INDEX_HTML = r"""<!doctype html>
 
     a:hover { text-decoration: underline; }
 
+    .next-btn {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      border: 2px dashed var(--line);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+
+    .next-btn:hover:not(:disabled) {
+      border-color: var(--ink);
+      color: var(--ink);
+      background: var(--panel);
+    }
+
+    .next-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     @media (max-width: 920px) {
       .app {
         grid-template-columns: 1fr;
@@ -850,9 +902,27 @@ INDEX_HTML = r"""<!doctype html>
       }
 
       briefDate.textContent = `${state.brief.run_date} · updated ${state.brief.updated_at}`;
-      cards.innerHTML = state.items.length
-        ? state.items.map(itemCard).join("")
-        : `<div class="card empty">아이템 파싱 결과가 없습니다. 원문은 SQLite briefs에 저장되어 있습니다.</div>`;
+
+      const hasDeepDive = state.items.some((i) => i.status === "active");
+      let cardsHtml = "";
+
+      if (hasDeepDive) {
+        const activeItem = state.items.find((i) => i.status === "active");
+        const revealedItems = state.items.filter((i) => i.status === "revealed");
+        const visibleItems = [activeItem, ...revealedItems].filter(Boolean);
+        cardsHtml = visibleItems.length ? visibleItems.map(itemCard).join("") : `<div class="card empty">아이템을 찾을 수 없습니다.</div>`;
+
+        const hasCandidate = state.items.some((i) => i.status === "candidate");
+        if (hasCandidate) {
+          cardsHtml += `<button id="nextBtn" class="next-btn" onclick="handleNext()">Next →</button>`;
+        }
+      } else {
+        cardsHtml = state.items.length
+          ? state.items.map(itemCard).join("")
+          : `<div class="card empty">아이템 파싱 결과가 없습니다. 원문은 SQLite briefs에 저장되어 있습니다.</div>`;
+      }
+
+      cards.innerHTML = cardsHtml;
 
       runState.innerHTML = [
         `Brief ID: ${state.brief.id}`,
@@ -920,6 +990,32 @@ INDEX_HTML = r"""<!doctype html>
         brief_id: state.brief && state.brief.id,
         note
       });
+    }
+
+    async function handleNext() {
+      const btn = document.getElementById("nextBtn");
+      if (btn) btn.disabled = true;
+
+      const response = await fetch("/api/next", { method: "POST" });
+      const data = await response.json();
+
+      if (data.exhausted) {
+        alert("오늘의 후보를 모두 확인했습니다.");
+        await loadData();
+        return;
+      }
+
+      if (!data.ok) {
+        alert("Next 로드 실패");
+        if (btn) btn.disabled = false;
+        return;
+      }
+
+      const idx = state.items.findIndex((i) => i.id === data.item.id);
+      if (idx !== -1) {
+        state.items[idx] = data.item;
+      }
+      render();
     }
 
     loadData();

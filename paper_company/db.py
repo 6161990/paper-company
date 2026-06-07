@@ -43,6 +43,7 @@ def init_db() -> None:
                 expansion TEXT,
                 exploration_path TEXT,
                 score REAL,
+                status TEXT NOT NULL DEFAULT 'candidate',
                 created_at TEXT NOT NULL,
                 FOREIGN KEY (brief_id) REFERENCES briefs(id)
             );
@@ -82,6 +83,14 @@ def init_db() -> None:
 
             """
         )
+        conn.commit()
+
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(items)")}
+        if "status" not in cols:
+            conn.execute(
+                "ALTER TABLE items ADD COLUMN status TEXT NOT NULL DEFAULT 'candidate'"
+            )
+            conn.commit()
 
 
 def save_brief_record(
@@ -136,9 +145,10 @@ def replace_items(brief_id: int, items: list[dict]) -> None:
                 expansion,
                 exploration_path,
                 score,
+                status,
                 created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
@@ -154,6 +164,7 @@ def replace_items(brief_id: int, items: list[dict]) -> None:
                     item.get("expansion"),
                     item.get("exploration_path"),
                     item.get("score"),
+                    item.get("status", "candidate"),
                     now,
                 )
                 for item in items
@@ -302,6 +313,7 @@ def get_items_for_brief(brief_id: int) -> list[sqlite3.Row]:
                 expansion,
                 exploration_path,
                 score,
+                status,
                 created_at
             FROM items
             WHERE brief_id = ?
@@ -333,3 +345,44 @@ def list_recent_feedback(limit: int = 20) -> list[sqlite3.Row]:
             """,
             (limit,),
         ).fetchall()
+
+
+def reveal_next_item(brief_id: int) -> sqlite3.Row | None:
+    init_db()
+    with connect() as conn:
+        item = conn.execute(
+            """
+            SELECT
+                id,
+                brief_id,
+                title,
+                source,
+                url,
+                category,
+                hook,
+                why_now,
+                why_fit,
+                next_action,
+                expansion,
+                exploration_path,
+                score,
+                status,
+                created_at
+            FROM items
+            WHERE brief_id = ? AND status = 'candidate'
+            ORDER BY id
+            LIMIT 1
+            """,
+            (brief_id,),
+        ).fetchone()
+
+        if item is None:
+            return None
+
+        conn.execute(
+            """
+            UPDATE items SET status = 'revealed' WHERE id = ?
+            """,
+            (item["id"],),
+        )
+        return item

@@ -1,0 +1,15 @@
+3[Unit]
+Description=Paper Company local runner
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=paper
+WorkingDirectory=/opt/paper-company
+ExecStart=/opt/paper-company/.venv/bin/python scripts/local_runner.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
