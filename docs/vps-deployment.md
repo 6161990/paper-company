@@ -1,204 +1,217 @@
-# VPS Deployment
+# VPS 배포 가이드
 
-목표:
+## 목표
+맥북이 꺼져 있어도 매일 오전 7시 KST에 Morning Signal이 자동 생성되고 Telegram으로 전송되어야 한다.
 
-```text
-노트북이 꺼져 있어도
-VPS에서 n8n이 오전 7시에 실행되고
-Claude Agent SDK가 Morning Signal을 만들고
-Telegram으로 전송하고
-Paperclip에서 상태를 본다.
+## 권장 VPS 서버
+
+### Option A: Oracle Cloud Free Tier (권장 - $0)
+- 스펙: 4 ARM OCPU + 24GB RAM + 200GB SSD
+- 프로비저닝: Frankfurt 또는 Singapore 지역 추천 (용량 여유 있음)
+- 비용: 영구 무료
+- 단점: 프로비저닝 시 "out of capacity" 오류로 1-3일 소요 가능
+
+### Option B: Hetzner CX22 (대안 - $4.70/mo)
+- 스펙: 2vCPU + 4GB RAM + 40GB NVMe
+- 프로비저닝: 즉시 (클릭 후 5분 내 준비)
+- 비용: ~€4.35/mo
+- 장점: 빠른 배포, 안정적
+
+### Option C: AWS Lightsail
+- 스펙: 2vCPU + 2GB RAM + 60GB SSD ($12/mo)
+- 비용: Hetzner보다 비쌈
+- 장점: AWS 익숙한 사용자용
+
+## 아키텍처
+
+```
+Local:
+  - Python 3.11 앱
+  - Claude Agent SDK (Claude 인증 필요)
+  - SQLite DB
+
+VPS (systemd services):
+  - paper-company-runner (포트 8711) ← Telegram /run 명령 처리
+  - paper-company-telegram            ← Telegram polling
+  - paperclip (포트 8720)             ← SSH 터널로만 접근
+
+Scheduled:
+  - systemd timer (매일 7AM KST)
+    → paper-company-daily.service
+    → explore_daily.py 직접 실행 (Docker 불필요)
 ```
 
-## Recommended First Deployment
+## 배포 단계
 
-초기에는 Paperclip을 공개 인터넷에 열지 않는다.
+### 1. VPS 인스턴스 생성
 
-```text
-Public:
-  n8n : http://SERVER_IP:5678
+**Oracle Cloud Free 콘솔:**
+- Compute → Instances → Create Instance
+- Image: Canonical Ubuntu 22.04
+- Shape: Compute → Always Free (VM.Standard.A1.Flex)
+- Network: VCN 기본값, Public IP 자동 할당
+- 생성 후 `ssh -i key.pem ubuntu@PUBLIC_IP`
 
-Private:
-  runner   : http://127.0.0.1:8711
-  Paperclip: http://127.0.0.1:8720
-  SQLite   : /opt/paper-company/data/paper_company.db
-```
+**Hetzner 콘솔:**
+- Cloud Console → Servers → Create Server
+- Image: Ubuntu 22.04
+- Type: CX22
+- Datacenter: 아무거나 (모두 빠름)
+- SSH key 등록
+- 생성 후 `ssh -i key.pem root@PUBLIC_IP`
 
-Paperclip은 SSH 터널로 본다.
+### 2. 초기 설정
 
 ```bash
-ssh -L 8720:127.0.0.1:8720 paper@SERVER_IP
-```
-
-로컬 브라우저:
-
-```text
-http://127.0.0.1:8720
-```
-
-## Server Setup
-
-Ubuntu 기준.
-
-```bash
+# Oracle: ubuntu 사용자, Hetzner: root 사용자
 sudo apt update
-sudo apt install -y git python3 python3-venv docker.io docker-compose-plugin
+sudo apt install -y git python3 python3-venv
+
+# 전용 사용자 생성
 sudo useradd -m -s /bin/bash paper
-sudo usermod -aG docker paper
+sudo usermod -aG docker paper  # (필요하면 Docker 설치하고 추가)
 ```
 
-repo 위치:
+### 3. 코드 체크아웃
 
 ```bash
-sudo mkdir -p /opt
-sudo chown paper:paper /opt
 sudo -iu paper
-cd /opt
-git clone REPO_URL paper-company
-cd paper-company
-```
+mkdir -p /opt
+git clone https://github.com/6161990/paper-company.git /opt/paper-company
+cd /opt/paper-company
 
-Python:
-
-```bash
+# Python 환경 설정
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-```
 
-환경변수:
-
-```bash
+# 환경 변수 설정
 cp .env.example .env
 nano .env
+# 필수: TELEGRAM_BOT_TOKEN (BotFather에서 발급)
+# 선택: TELEGRAM_CHAT_ID
 ```
 
-필수:
-
-```text
-GENERIC_TIMEZONE=Asia/Seoul
-N8N_PORT=5678
-N8N_PROTOCOL=http
-N8N_HOST=SERVER_IP
-TELEGRAM_BOT_TOKEN=...
-```
-
-## Claude Auth
-
-VPS는 새 컴퓨터이므로 Claude 인증을 한 번 해야 한다.
+### 4. Claude Agent SDK 인증
 
 ```bash
 .venv/bin/claude
+# CLI 프롬프트에서 /login 입력
+# 표시되는 URL을 로컬 브라우저에서 열고 로그인
+# 로그인 완료 후 CLI를 종료
 ```
 
-Claude CLI 안에서:
+Claude는 사용자 홈디렉터리(`~/.claude`)에 인증 정보를 저장한다.
 
-```text
+### 5. systemd 서비스 등록
+
+```bash
+# 서비스 파일 복사
+sudo cp /opt/paper-company/deploy/systemd/*.service /etc/systemd/system/
+sudo cp /opt/paper-company/deploy/systemd/*.timer /etc/systemd/system/
+
+# systemd 재로드
+sudo systemctl daemon-reload
+
+# 3개 서비스 활성화 (start 포함)
+sudo systemctl enable --now paper-company-runner
+sudo systemctl enable --now paper-company-telegram
+sudo systemctl enable --now paperclip
+
+# 매일 7AM 타이머 활성화
+sudo systemctl enable --now paper-company-daily.timer
+```
+
+### 6. 검증
+
+```bash
+# 서비스 상태 확인
+systemctl status paper-company-runner
+systemctl status paper-company-telegram
+systemctl status paperclip
+
+# 다음 Morning Signal 실행 시각 확인
+systemctl list-timers | grep paper-company
+
+# runner 헬스체크
+curl http://127.0.0.1:8711/health
+
+# 로그 확인
+journalctl -u paper-company-runner -f
+journalctl -u paper-company-telegram -f
+journalctl -u paper-company-daily -f
+```
+
+### 7. 수동 1회 실행 테스트
+
+```bash
+# 스케줄 대기 없이 지금 바로 실행
+sudo systemctl start paper-company-daily.service
+
+# 로그 실시간 확인
+journalctl -u paper-company-daily -f
+```
+
+완료되면 `SIGTERM`으로 종료.
+
+### 8. Telegram으로 확인
+
+```
+/ping   → "pong from Paper Company" 응답
+/today  → 최신 Morning Signal 반환
+/run    → 새 Morning Signal 생성 (2-3분 소요)
+```
+
+### 9. Paperclip UI 접근 (SSH 터널)
+
+Paperclip UI는 로컬 개발 목적이므로 공개 인터넷에 노출하지 않는다.
+SSH 터널로만 접근:
+
+```bash
+# 로컬 머신에서
+ssh -L 8720:127.0.0.1:8720 paper@SERVER_IP
+
+# 로컬 브라우저: http://127.0.0.1:8720
+```
+
+## 문제해결
+
+### "TELEGRAM_BOT_TOKEN is missing"
+→ `.env` 파일 확인, BotFather에서 새 토큰 발급, `/opt/paper-company/.env`에 입력
+
+### "/login 후 Claude 명령이 안 먹음"
+→ `claude` CLI가 인증 정보를 찾지 못함
+```bash
+# 다시 로그인
+.venv/bin/claude
 /login
 ```
 
-표시되는 URL을 로컬 브라우저에서 열고 로그인한다.
-
-확인:
-
+### "systemctl enable --now 후에도 서비스 안 떠있음"
 ```bash
-.venv/bin/python scripts/explore_daily.py
-```
-
-성공하면 `data/briefs/YYYY-MM-DD.md`와 SQLite record가 생성된다.
-
-## n8n
-
-```bash
-docker compose up -d
-```
-
-브라우저:
-
-```text
-http://SERVER_IP:5678
-```
-
-n8n workflow:
-
-```text
-Schedule Trigger
-  -> HTTP Request
-```
-
-Schedule:
-
-```text
-Every day
-07:00
-Timezone: Asia/Seoul
-```
-
-HTTP Request:
-
-```text
-Method: POST
-URL: http://host.docker.internal:8711/run/explore
-Response Format: JSON
-```
-
-## systemd Services
-
-root 계정으로:
-
-```bash
-sudo cp /opt/paper-company/deploy/systemd/*.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now paper-company-runner
-sudo systemctl enable --now paperclip
-sudo systemctl enable --now paper-company-telegram
-```
-
-상태 확인:
-
-```bash
+# 상태 확인
 systemctl status paper-company-runner
-systemctl status paperclip
-systemctl status paper-company-telegram
-```
 
-로그:
+# 로그 확인
+journalctl -u paper-company-runner -n 50
 
-```bash
+# 수동 시작 + 로그 보기
+sudo systemctl start paper-company-runner
 journalctl -u paper-company-runner -f
-journalctl -u paperclip -f
-journalctl -u paper-company-telegram -f
 ```
 
-## Verify
-
-runner:
-
+### "systemd timer가 7시에 안 돈다"
 ```bash
-curl http://127.0.0.1:8711/health
+# 다음 실행 시각 확인
+systemctl list-timers paper-company-daily
+
+# 수동으로 1회 테스트
+sudo systemctl start paper-company-daily.service
+journalctl -u paper-company-daily -f
 ```
 
-Paperclip:
+## 메모
 
-```bash
-curl http://127.0.0.1:8720/health
-```
-
-Telegram:
-
-```text
-/ping
-/today
-```
-
-## Today Delivery
-
-배포 당일 바로 받으려면:
-
-```text
-1. Claude auth 완료
-2. runner systemd 실행
-3. Telegram bot systemd 실행
-4. Telegram에서 /run 전송
-```
-
-오전 7시 자동 실행은 n8n Schedule Trigger까지 만든 뒤 다음 7시에 돈다.
+- n8n은 설치하지 않는다 (Docker 불필요)
+- systemd timer + `explore_daily.py` 직접 실행으로 충분
+- SSH 터널을 통해 Paperclip 접근 (보안)
+- 매일 7AM KST에 자동 실행 (Persistent=true로 설정됨)

@@ -7,6 +7,7 @@ Wants=network-online.target
 Type=simple
 User=paper
 WorkingDirectory=/opt/paper-company
+EnvironmentFile=/opt/paper-company/.env
 ExecStart=/opt/paper-company/.venv/bin/python scripts/telegram_poll.py
 Restart=always
 RestartSec=5
