@@ -93,14 +93,28 @@ nano .env
 
 ### 4. Claude Agent SDK 인증
 
+**로컬 맥에서 미리 인증 정보 준비:**
+
+Claude Code에서 이미 로그인했다면 `~/.claude` 디렉터리에 인증 정보가 저장되어 있다.
+
 ```bash
-.venv/bin/claude
-# CLI 프롬프트에서 /login 입력
-# 표시되는 URL을 로컬 브라우저에서 열고 로그인
-# 로그인 완료 후 CLI를 종료
+# 로컬 맥에서 확인
+ls ~/.claude
 ```
 
-Claude는 사용자 홈디렉터리(`~/.claude`)에 인증 정보를 저장한다.
+**VPS에 인증 정보 복사:**
+
+```bash
+# 로컬 맥에서
+scp -r ~/.claude paper@SERVER_IP:/home/paper/
+
+# VPS에서 (이미 인증됨)
+cd /opt/paper-company
+.venv/bin/python scripts/explore_daily.py
+# Claude Agent SDK가 ~/.claude의 인증 정보 자동 사용
+```
+
+로컬에서 인증이 안 됐다면, Claude Code 웹앱(claude.ai/code)에 한 번 로그인 하면 자동으로 `~/.claude`가 생성된다.
 
 ### 5. systemd 서비스 등록
 
