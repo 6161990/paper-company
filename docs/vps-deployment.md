@@ -44,21 +44,56 @@ Scheduled:
 
 ## 배포 단계
 
+### 0. Network ACL 설정 (VPC 생성 후)
+
+**Network ACL (Access Control List)** = 네트워크 방화벽
+
+VPC 생성 직후 ACL을 설정해야 SSH 접속 가능:
+
+**Naver Cloud 콘솔:**
+1. **Networking → VPC**
+2. 방금 만든 VPC 선택
+3. **Network ACL** 탭 클릭
+4. **Network ACL 생성**:
+   - **이름**: `paper-acl` (아무거나)
+   - **IP 주소 범위**: 기본값 (Private: 10.0.0.0/8)
+   - **유형**: NORMAL
+5. **생성** 클릭
+
+**설정 화면:**
+```
+VPC 생성 창에서:
+┌─────────────────────────┐
+│ VPC 생성                │
+│                         │
+│ VPC 이름: paper-vpc    │
+│ IP 주소 범위: 10.0.0.0/16 │
+│ 유형: NORMAL           │
+│ [생성]                 │
+└─────────────────────────┘
+```
+
+이 단계가 완료되면 Subnet 생성 가능.
+
+---
+
 ### 1. VPS 인스턴스 생성
 
 **Naver Cloud 콘솔:**
 
 1. **console.ncloud.com** 접속 (가입/로그인)
-2. **Servers → Server 생성**
-3. 설정:
+2. **Compute → Server**
+3. **Server 생성** 클릭
+4. 설정:
    - **이미지**: Ubuntu 22.04 LTS
    - **서버 타입**: 표준 (2vCPU, 4GB RAM, 50GB SSD)
    - **지역**: Korea (Seoul)
-   - **네트워크**: 기본값
-   - **공인 IP**: 자동 할당
-4. **생성** 클릭 (2-3분 소요)
+   - **VPC**: 방금 만든 VPC 선택
+   - **Subnet**: 방금 만든 Subnet 선택
+   - **공인 IP**: 자동 할당 ✓
+5. **생성** 클릭 (2-3분 소요)
 
-→ 서버 상태가 "Running"이 되면 **공인 IP** 메모.
+→ 서버 상태가 **"Running"**이 되면 **공인 IP** 메모.
 
 **초기 크레딧 신청:**
 - Naver Cloud 콘솔 → 우측 상단 → "크레딧/쿠폰" → 신규 가입자 크레딧 신청
@@ -69,7 +104,7 @@ Scheduled:
 ssh -i ~/.ssh/naver_key root@PUBLIC_IP
 ```
 
-Naver Cloud는 root 사용자로 시작.
+Naver Cloud는 root 사용자로 시작 (ubuntu 사용자 아님).
 
 ### 2. 초기 설정
 
