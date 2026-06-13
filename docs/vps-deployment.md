@@ -46,17 +46,45 @@
                         (방화벽)      (격리)    (실제 머신)
 ```
 
-**VPC (Virtual Private Cloud)**
-- 클라우드에서 격리된 네트워크 공간 (10.0.0.0/16)
-- 여러 서버/리소스를 조직적으로 관리
+**VPC (Virtual Private Cloud) — IP 범위: 10.0.0.0/16**
 
-**Subnet**
-- VPC 안의 세부 네트워크 (10.0.1.0/24)
-- Server가 실제로 배치되는 위치
+- 클라우드에서 격리된 네트워크 공간
+- **왜 10.0.0.0/16?**
+  - `10.0.0.0/16` = 10.0.0.0 ~ 10.0.255.255 (65,536개 IP)
+  - Private IP 범위 표준 (RFC 1918)
+  - 일반적인 기업/클라우드 관례
+  - 더 큰 범위를 예약해서 나중에 Subnet 여러 개 추가 가능
+    - Subnet 1: 10.0.1.0/24 (256개)
+    - Subnet 2: 10.0.2.0/24 (256개)
+    - ... 계속 추가 가능
 
-**Network ACL**
-- 네트워크 방화벽 (어떤 포트를 열지)
-- SSH(22), outbound는 모두 열림
+**Subnet — IP 범위: 10.0.1.0/24**
+
+- VPC 안의 세부 네트워크
+- **왜 10.0.1.0/24?**
+  - `10.0.1.0/24` = 10.0.1.0 ~ 10.0.1.255 (256개 IP)
+  - Server 1개만 필요하므로 /24로 충분 (254개 사용 가능)
+  - VPC의 10.0.0.0/16 범위 **안에** 포함됨
+  - Server는 10.0.1.10, 10.0.1.11 등의 IP를 할당받음
+
+**Network ACL — IP 범위: 10.0.0.0/8**
+
+- 네트워크 방화벽 (어떤 포트/IP를 허용할지)
+- **왜 10.0.0.0/8?**
+  - `10.0.0.0/8` = 10.0.0.0 ~ 10.255.255.255 (16,777,216개 IP)
+  - Private IP 전체 범위
+  - VPC 내부 통신은 모두 허용 (10.0.0.0/16도 포함)
+  - 추후 VPC를 확장하거나 다른 네트워크와 연결할 때도 대비
+  - SSH(22)는 모두 허용, Outbound도 모두 허용
+
+**IP 범위 계층 관계:**
+
+```
+ACL 범위      10.0.0.0/8 (전체 private IP 허용)
+  └─ VPC 범위    10.0.0.0/16 (VPC 격리)
+      └─ Subnet 범위  10.0.1.0/24 (실제 Server가 들어갈 공간)
+          └─ Server IP     10.0.1.10 (구체적 IP 할당)
+```
 
 ---
 
@@ -216,7 +244,6 @@ ssh -i ~/.ssh/naver_key -L 8720:127.0.0.1:8720 paper@PUBLIC_IP
 |---|---|---|
 | SSH 접속 실패 | Network ACL 미설정 | VPC → Network ACL 생성 |
 | explore_daily.py 오류 | ~/.claude 복사 실패 | `scp -r ~/.claude` 재실행 |
-| `/ping` 응답 없음 | paper-company-telegram 미실행 | `systemctl start paper-company-telegram` |
 | 매일 7AM 실행 안 됨 | timer 미활성화 | `sudo systemctl enable paper-company-daily.timer` |
 
 ---
@@ -237,9 +264,3 @@ ssh -i ~/.ssh/naver_key -L 8720:127.0.0.1:8720 paper@PUBLIC_IP
 
 ---
 
-## 크레딧 신청
-
-```bash
-Naver Cloud 콘솔 → 우측 상단 → 크레딧/쿠폰 → 신규 가입자 크레딧
-(3-6개월 무료 사용)
-```
