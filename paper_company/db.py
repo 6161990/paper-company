@@ -1,10 +1,12 @@
+import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DB_PATH = ROOT / "data" / "paper_company.db"
+# Railway: /data (Volume), Local: ./data
+DB_PATH = Path(os.getenv("DB_PATH", ROOT / "data" / "paper_company.db"))
 
 
 def connect() -> sqlite3.Connection:
