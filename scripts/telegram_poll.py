@@ -200,22 +200,52 @@ def latest_brief_text() -> str:
     return f"✨ *{brief['title']}*\n\n{formatted}"
 
 
-def run_exploration() -> tuple[bool, str]:
+def run_exploration(token: str = None, chat_id: int = None) -> tuple[bool, str]:
     run_id = start_run(service="morning_signal", trigger_type="telegram_run")
+    stdout_lines = []
+    stderr_lines = []
+
     try:
-        proc = subprocess.run(
+        proc = subprocess.Popen(
             [str(ROOT / ".venv" / "bin" / "python"), "scripts/explore_daily.py"],
             cwd=ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            capture_output=True,
-            timeout=1200,
         )
+
+        # Read output in real-time
+        import select
+        while True:
+            ready = select.select([proc.stdout, proc.stderr], [], [], 0.1)
+
+            for stream in ready[0]:
+                line = stream.readline()
+                if line:
+                    line = line.rstrip()
+                    if stream == proc.stdout:
+                        stdout_lines.append(line)
+                        print(f"[explore] {line}", flush=True)
+                    else:
+                        stderr_lines.append(line)
+                        print(f"[explore-err] {line}", flush=True)
+
+                    # Send to Telegram if available
+                    if token and chat_id and "[완료]" in line:
+                        send_message(token, chat_id, f"✅ {line}")
+
+            if proc.poll() is not None:
+                break
+
+        proc.wait(timeout=1200)
+
     except subprocess.TimeoutExpired as exc:
+        proc.kill()
         finish_run(
             run_id,
             status="timeout",
-            stdout=exc.stdout,
-            stderr=exc.stderr,
+            stdout="\n".join(stdout_lines),
+            stderr="\n".join(stderr_lines),
             error="explore_daily.py timed out after 1200 seconds",
         )
         return False, "explore_daily.py timed out after 1200 seconds"
@@ -224,11 +254,11 @@ def run_exploration() -> tuple[bool, str]:
         run_id,
         status="success" if proc.returncode == 0 else "error",
         returncode=proc.returncode,
-        stdout=proc.stdout,
-        stderr=proc.stderr,
+        stdout="\n".join(stdout_lines),
+        stderr="\n".join(stderr_lines),
     )
     if proc.returncode != 0:
-        return False, proc.stderr or proc.stdout or "explore_daily.py failed"
+        return False, "\n".join(stderr_lines) or "\n".join(stdout_lines) or "explore_daily.py failed"
     return True, latest_brief_text()
 
 
@@ -262,7 +292,7 @@ def save_mobile_feedback(feedback_type: str, note: str) -> str:
     return f"저장했습니다. feedback_id={feedback_id}"
 
 
-def handle_text(text: str) -> tuple[str, bool]:
+def handle_text(text: str, token: str = None, chat_id: int = None) -> tuple[str, bool]:
     command = command_name(text)
 
     if command == "/ping":
@@ -272,7 +302,7 @@ def handle_text(text: str) -> tuple[str, bool]:
         return latest_brief_text(), True
 
     if command == "/run":
-        ok, response = run_exploration()
+        ok, response = run_exploration(token, chat_id)
         if not ok:
             return f"Morning Signal 생성 실패:\n{response}", True
         return response, True
@@ -331,7 +361,7 @@ def poll(token: str) -> None:
                 if command == "/run":
                     send_message(token, chat_id, "Morning Signal 생성을 시작했습니다. 보통 몇 분 걸립니다.")
 
-                reply, is_long = handle_text(text)
+                reply, is_long = handle_text(text, token, chat_id)
                 save_mobile_request(
                     command=command,
                     input_text=text,
