@@ -1026,9 +1026,15 @@ INDEX_HTML = r"""<!doctype html>
 
 
 def main() -> None:
-    server = ThreadingHTTPServer((HOST, PORT), PaperclipHandler)
-    print(f"Paperclip UI running at http://{HOST}:{PORT}")
-    server.serve_forever()
+    try:
+        server = ThreadingHTTPServer((HOST, PORT), PaperclipHandler)
+        print(f"Paperclip UI running at http://{HOST}:{PORT}", flush=True)
+        server.serve_forever()
+    except Exception as e:
+        print(f"[ERROR] Failed to start paperclip server: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        raise
 
 
 if __name__ == "__main__":
