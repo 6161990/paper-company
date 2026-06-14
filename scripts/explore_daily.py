@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -149,7 +150,8 @@ def print_progress(message: object) -> None:
         print(f"[진행] {name}", flush=True)
 
 
-async def main() -> None:
+async def main_sdk() -> str | None:
+    """Claude Agent SDK를 사용한 Morning Signal 생성 (로컬 개발용)"""
     weekday = get_today_weekday()
     agent = get_agent_for_weekday(weekday)
 
@@ -163,10 +165,10 @@ async def main() -> None:
         from claude_agent_sdk import ClaudeAgentOptions, query
     except ImportError:
         print("claude-agent-sdk is not installed yet.")
-        print("Install later with: pip install claude-agent-sdk")
+        print("Install with: pip install claude-agent-sdk")
         print("\nExploration prompt preview:\n")
         print(prompt)
-        return
+        return None
 
     messages: list[str] = []
     print(f"Paper Company 탐색을 시작합니다. (담당: {agent['name']} Agent)", flush=True)
@@ -192,14 +194,72 @@ async def main() -> None:
             print("Claude Agent SDK is installed, but Claude Code is not authenticated.")
             print("Run `claude` in a terminal, then run `/login`.")
             print("After login, retry: .venv/bin/python scripts/explore_daily.py")
-            return
+            return None
         raise
 
     if not messages:
         print("Claude Agent SDK completed, but no brief text was returned.")
+        return None
+
+    return messages[-1]
+
+
+def main_api() -> str | None:
+    """Anthropic API를 사용한 Morning Signal 생성 (Railway 배포용)"""
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        print("ANTHROPIC_API_KEY environment variable not set.")
+        return None
+
+    try:
+        import anthropic
+    except ImportError:
+        print("anthropic is not installed.")
+        print("Install with: pip install anthropic")
+        return None
+
+    weekday = get_today_weekday()
+    agent = get_agent_for_weekday(weekday)
+
+    interests = json.loads(INTERESTS_PATH.read_text())
+    feedback = json.loads(FEEDBACK_PATH.read_text())
+    recent_briefs = load_recent_briefs()
+
+    prompt = build_prompt(interests, feedback, recent_briefs)
+
+    client = anthropic.Anthropic(api_key=api_key)
+    print(f"Anthropic API로 탐색을 시작합니다. (담당: {agent['name']} Agent)", flush=True)
+
+    try:
+        response = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=4096,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        brief = response.content[0].text
+        print("[완료] Morning Signal 생성이 끝났습니다.", flush=True)
+        return brief
+    except Exception as e:
+        print(f"[오류] Anthropic API 호출 실패: {e}", flush=True)
+        return None
+
+
+async def main() -> None:
+    # 1. Anthropic API 시도 (Railway 환경)
+    if os.getenv("ANTHROPIC_API_KEY"):
+        print("Using Anthropic API mode", flush=True)
+        brief = main_api()
+    else:
+        # 2. Claude Agent SDK 시도 (로컬 개발)
+        print("Using Claude Agent SDK mode", flush=True)
+        brief = await main_sdk()
+
+    if not brief:
+        print("Failed to generate Morning Signal.")
         return
 
-    brief = messages[-1]
     path, brief_id = save_brief(brief)
     print("\n--- Morning Signal ---\n")
     print(brief)
