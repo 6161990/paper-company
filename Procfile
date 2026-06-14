@@ -1,1 +1,1 @@
-web: python scripts/paperclip_server.py
+web: python scripts/start_all.py
